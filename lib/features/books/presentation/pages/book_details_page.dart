@@ -52,7 +52,11 @@ class BookDetailsPage extends ConsumerWidget {
               color: Colors.white,
               size: 20,
             ),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Link copied to clipboard!")),
+              );
+            },
           ),
         ],
       ),
@@ -181,7 +185,13 @@ class BookDetailsPage extends ConsumerWidget {
                         const SizedBox(width: 16),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () {},
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Edit feature coming soon!"),
+                                ),
+                              );
+                            },
                             icon: const Icon(Icons.edit),
                             label: const Text("Edit"),
                             style: OutlinedButton.styleFrom(

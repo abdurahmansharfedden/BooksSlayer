@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
-import 'features/books/presentation/pages/main_wrapper.dart';
+import 'core/router/app_router.dart';
+import 'core/theme/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,13 +15,16 @@ class BooksSlayerApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp(
+    final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeProvider);
+
+    return MaterialApp.router(
       title: 'Books Slayer',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      home: const MainWrapper(),
+      themeMode: themeMode,
+      routerConfig: router,
     );
   }
 }

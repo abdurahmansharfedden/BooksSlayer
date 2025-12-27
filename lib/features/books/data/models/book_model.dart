@@ -14,6 +14,7 @@ class BookModel extends Book {
     super.downloadCount,
     super.languages,
     super.subjects,
+    super.userId,
   });
 
   factory BookModel.fromJson(Map<String, dynamic> json) {
@@ -63,6 +64,7 @@ class BookModel extends Book {
           (json['languages'] as List?)?.map((e) => e.toString()).toList() ?? [],
       subjects:
           (json['subjects'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      userId: json['userId'] as String?,
     );
   }
 
@@ -80,6 +82,7 @@ class BookModel extends Book {
       'download_count': downloadCount,
       'languages': languages,
       'subjects': subjects,
+      'userId': userId,
     };
   }
 
@@ -97,10 +100,11 @@ class BookModel extends Book {
       downloadCount: downloadCount,
       languages: languages,
       subjects: subjects,
+      userId: userId,
     );
   }
 
-  BookModel copyWith({String? category}) {
+  BookModel copyWith({String? category, String? userId, bool? isFavorite}) {
     return BookModel(
       id: id,
       title: title,
@@ -109,11 +113,12 @@ class BookModel extends Book {
       rating: rating,
       description: description,
       category: category ?? this.category,
-      isFavorite: isFavorite,
+      isFavorite: isFavorite ?? this.isFavorite,
       readUrl: readUrl,
       downloadCount: downloadCount,
       languages: languages,
       subjects: subjects,
+      userId: userId ?? this.userId,
     );
   }
 }

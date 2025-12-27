@@ -13,6 +13,7 @@ class Book extends Equatable {
   final int downloadCount;
   final List<String> languages;
   final List<String> subjects;
+  final String? userId;
 
   const Book({
     required this.id,
@@ -27,6 +28,7 @@ class Book extends Equatable {
     this.downloadCount = 0,
     this.languages = const [],
     this.subjects = const [],
+    this.userId,
   });
 
   @override
@@ -43,5 +45,6 @@ class Book extends Equatable {
     downloadCount,
     languages,
     subjects,
+    userId,
   ];
 }

@@ -1,21 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../features/auth/presentation/providers/auth_provider.dart';
+import '../../../../core/theme/theme_provider.dart';
+import '../providers/books_provider.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+    final userBooksAsync = ref.watch(userBooksProvider);
+
+    if (user == null) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Profile"),
         actions: [
           IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: "Add Book",
+            onPressed: () {
+              context.push('/add_book');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
+            onPressed: () {
+              _showThemeSettings(context, ref);
+            },
           ),
         ],
       ),
@@ -38,21 +59,26 @@ class ProfileScreen extends StatelessWidget {
                         width: 2,
                       ),
                     ),
-                    child: Icon(
-                      FontAwesomeIcons.solidUser,
-                      size: 40,
-                      color: theme.colorScheme.primary,
+                    child: Center(
+                      child: Text(
+                        user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                        style: TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "Book Lover",
+                    user.name,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    "joined 2025",
+                    user.email,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey,
                     ),
@@ -64,86 +90,177 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 30),
 
             // Stats Grid
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      "Books Read",
-                      "12",
-                      FontAwesomeIcons.bookOpen,
-                      Colors.blue,
+            userBooksAsync.when(
+              data: (books) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        context,
+                        "My Library",
+                        "${books.length}",
+                        FontAwesomeIcons.bookOpen,
+                        Colors.blue,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      "Liked",
-                      "5",
-                      Icons.favorite,
-                      Colors.red,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildStatCard(
+                        context,
+                        "Favorites",
+                        "${books.where((b) => b.isFavorite).length}",
+                        Icons.favorite,
+                        Colors.red,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0),
+                  ],
+                ),
+              ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Text('Error loading stats: $err'),
+            ),
 
             const SizedBox(height: 16),
 
+            // User Books List Preview
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      "Pages",
-                      "3,240",
-                      Icons.layers,
-                      Colors.orange,
-                    ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "My Books",
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      "Streak",
-                      "5 Days",
-                      FontAwesomeIcons.fire,
-                      Colors.amber,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+            ),
+            const SizedBox(height: 8),
+            userBooksAsync.when(
+              data: (books) {
+                if (books.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text("No books added yet."),
+                  );
+                }
+                return SizedBox(
+                  height: 150,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: books.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final book = books[index];
+                      // Display a simple card for now
+                      return Container(
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: theme.cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          image: book.imageUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(book.imageUrl!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                          border: Border.all(
+                            color: Colors.grey.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: book.imageUrl == null
+                            ? Center(
+                                child: Text(
+                                  book.title,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 10),
+                                ),
+                              )
+                            : null,
+                      );
+                    },
+                  ),
+                );
+              },
+              loading: () => const SizedBox(),
+              error: (_, __) => const SizedBox(),
+            ),
 
             const SizedBox(height: 30),
 
             // Settings List
             _buildSettingsTile(
               context,
-              "Notifications",
-              Icons.notifications_outlined,
+              "App Theme",
+              Icons.brightness_6,
+              onTap: () => _showThemeSettings(context, ref),
             ),
-            _buildSettingsTile(context, "Appearance", Icons.palette_outlined),
-            _buildSettingsTile(
-              context,
-              "Privacy & Security",
-              Icons.lock_outline,
-            ),
-            _buildSettingsTile(context, "Help & Support", Icons.help_outline),
             _buildSettingsTile(
               context,
               "Log Out",
               Icons.logout,
               isDestructive: true,
+              onTap: () {
+                ref.read(authProvider.notifier).signOut();
+                // Router redirect will handle navigation
+              },
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showThemeSettings(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        final currentTheme = ref.read(themeProvider);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.brightness_auto),
+                title: const Text('System Default'),
+                trailing: currentTheme == ThemeMode.system
+                    ? const Icon(Icons.check, color: Colors.blue)
+                    : null,
+                onTap: () {
+                  ref.read(themeProvider.notifier).setTheme(ThemeMode.system);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.wb_sunny),
+                title: const Text('Light Mode'),
+                trailing: currentTheme == ThemeMode.light
+                    ? const Icon(Icons.check, color: Colors.blue)
+                    : null,
+                onTap: () {
+                  ref.read(themeProvider.notifier).setTheme(ThemeMode.light);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.nights_stay),
+                title: const Text('Dark Mode'),
+                trailing: currentTheme == ThemeMode.dark
+                    ? const Icon(Icons.check, color: Colors.blue)
+                    : null,
+                onTap: () {
+                  ref.read(themeProvider.notifier).setTheme(ThemeMode.dark);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -192,6 +309,7 @@ class ProfileScreen extends StatelessWidget {
     String title,
     IconData icon, {
     bool isDestructive = false,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       leading: Container(
@@ -216,7 +334,7 @@ class ProfileScreen extends StatelessWidget {
         ),
       ),
       trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-      onTap: () {},
+      onTap: onTap,
     );
   }
 }

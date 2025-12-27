@@ -4,25 +4,61 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/favorites_provider.dart';
 import 'book_details_page.dart';
 
-class FavoritesPage extends ConsumerWidget {
+class FavoritesPage extends ConsumerStatefulWidget {
   const FavoritesPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FavoritesPage> createState() => _FavoritesPageState();
+}
+
+enum SortOption { title, author }
+
+class _FavoritesPageState extends ConsumerState<FavoritesPage> {
+  SortOption _sortOption = SortOption.title;
+
+  @override
+  Widget build(BuildContext context) {
     final favoriteBooks = ref.watch(favoritesProvider);
+
+    // Sort logic
+    final sortedBooks = [...favoriteBooks];
+    if (_sortOption == SortOption.title) {
+      sortedBooks.sort((a, b) => a.title.compareTo(b.title));
+    } else {
+      sortedBooks.sort((a, b) => a.author.compareTo(b.author));
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Favorites"),
-        actions: [IconButton(icon: const Icon(Icons.sort), onPressed: () {})],
+        actions: [
+          PopupMenuButton<SortOption>(
+            icon: const Icon(Icons.sort),
+            onSelected: (SortOption option) {
+              setState(() {
+                _sortOption = option;
+              });
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<SortOption>>[
+              const PopupMenuItem<SortOption>(
+                value: SortOption.title,
+                child: Text('Sort by Title'),
+              ),
+              const PopupMenuItem<SortOption>(
+                value: SortOption.author,
+                child: Text('Sort by Author'),
+              ),
+            ],
+          ),
+        ],
       ),
-      body: favoriteBooks.isEmpty
+      body: sortedBooks.isEmpty
           ? _buildEmptyState(context)
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: favoriteBooks.length,
+              itemCount: sortedBooks.length,
               itemBuilder: (context, index) {
-                final book = favoriteBooks[index];
+                final book = sortedBooks[index];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
