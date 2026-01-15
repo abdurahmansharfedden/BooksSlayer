@@ -5,6 +5,7 @@ import '../widgets/continue_reading_widget.dart';
 import '../widgets/all_books_grid.dart';
 import '../widgets/add_edit_book_sheet.dart';
 import '../providers/books_provider.dart';
+import '../widgets/book_search_delegate.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -18,10 +19,20 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text("Books Slayer"),
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              final books = allBooksAsyncValue.asData?.value ?? [];
+              showSearch(context: context, delegate: BookSearchDelegate(books));
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("No new notifications")),
+              );
+            },
           ),
         ],
       ),
